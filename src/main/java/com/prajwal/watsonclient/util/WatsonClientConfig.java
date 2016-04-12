@@ -14,7 +14,7 @@ public class WatsonClientConfig {
     private HashMap<String, String> configParams;
 
     private WatsonClientConfig() {
-        configParams = new HashMap<>();
+        configParams = new HashMap<String, String>();
         initializeConfig();
     }
 

@@ -1,9 +1,14 @@
 package com.prajwal.alexa.basictest;
 
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazon.speech.slu.Intent;
+import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.IntentRequest;
 import com.amazon.speech.speechlet.LaunchRequest;
 import com.amazon.speech.speechlet.Session;
@@ -15,11 +20,14 @@ import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.prajwal.watsonclient.alchemydata.AlchemyDataNewsClient;
+import com.prajwal.watsonclient.alchemydata.AlchemyDataNewsController;
 
 public class AlexaBasicTestSpeechlet implements Speechlet {
 
     private static final Logger log = LoggerFactory.getLogger(AlexaBasicTestSpeechlet.class);
 
+    private static final String TOPIC_SLOT = "Topic";
 
     public void onSessionStarted(final SessionStartedRequest request, final Session session)
             throws SpeechletException {
@@ -43,8 +51,8 @@ public class AlexaBasicTestSpeechlet implements Speechlet {
         Intent intent = request.getIntent();
         String intentName = (intent != null) ? intent.getName() : null;
 
-        if ("HelloWorldIntent".equals(intentName)) {
-            return getHelloResponse();
+        if ("HelloWatsonIntent".equals(intentName)) {
+            return getHelloResponse(intent, session);
         } else if ("AMAZON.HelpIntent".equals(intentName)) {
             return getHelpResponse();
         } else {
@@ -65,11 +73,11 @@ public class AlexaBasicTestSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getWelcomeResponse() {
-        String speechText = "Welcome to the Alexa Skills Kit, you can say hello";
+        String speechText = "Welcome to the IBM Watson helper on Echo";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("HelloWorld");
+        card.setTitle("HelloWatson");
         card.setContent(speechText);
 
         // Create the plain text output.
@@ -88,12 +96,38 @@ public class AlexaBasicTestSpeechlet implements Speechlet {
      *
      * @return SpeechletResponse spoken and visual response for the given intent
      */
-    private SpeechletResponse getHelloResponse() {
-        String speechText = "Hello world!";
+    private SpeechletResponse getHelloResponse(final Intent intent, final Session session) {
+
+        Map<String, Slot> slots = intent.getSlots();
+        Slot topicSlot = slots.get(TOPIC_SLOT);
+
+        String speechText = "Something seriously went wrong while accessing Watson";
+
+        if(topicSlot != null) {
+            String topic = topicSlot.getValue();
+
+            String[] fields =
+                    new String[] {AlchemyDataNewsController.FIELD_TITLE, AlchemyDataNewsController.FIELD_URL};
+            AlchemyDataNewsController.AlchemyDataNewsBuilder queryBuilder = new AlchemyDataNewsController.AlchemyDataNewsBuilder();
+            queryBuilder = queryBuilder.setStartTime("1459468800")
+                    .setEndTime("1459728000")
+                    .setReturn(StringUtils.join(fields, ","))
+                    .setTitle(topic)
+                    .setCount(3);
+
+            AlchemyDataNewsClient alchemyDataNewsClient = new AlchemyDataNewsClient(queryBuilder.createAlchemyDataNewsController());
+            List<Map<String, Object>> parsedResults = alchemyDataNewsClient.getNews();
+
+            if(parsedResults != null) {
+                speechText = "The most popular news article about " + topic + " is " + parsedResults.get(0).get("title");
+            } else {
+                speechText = "Error while getting news from Watson. Sorry!";
+            }
+        }
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("HelloWorld");
+        card.setTitle("HelloWatson");
         card.setContent(speechText);
 
         // Create the plain text output.
@@ -109,7 +143,7 @@ public class AlexaBasicTestSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getHelpResponse() {
-        String speechText = "You can say hello to me!";
+        String speechText = "I can connect you to IBM Watson now! Try it out!";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();

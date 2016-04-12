@@ -1,5 +1,8 @@
 package com.prajwal.watsonclient;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 
 import com.prajwal.watsonclient.alchemydata.AlchemyDataNewsClient;
@@ -19,7 +22,13 @@ public class WatsonAPIClient {
                 .setCount(3);
 
         AlchemyDataNewsClient alchemyDataNewsClient = new AlchemyDataNewsClient(queryBuilder.createAlchemyDataNewsController());
-        alchemyDataNewsClient.getNews();
+        List<Map<String, Object>> parsedResults = alchemyDataNewsClient.getNews();
+
+        for(Map<String, Object> parsedMap : parsedResults) {
+            for (String key : parsedMap.keySet()) {
+                System.out.println("Key: " + key + " Value: " + parsedMap.get(key));
+            }
+        }
     }
 
 }
